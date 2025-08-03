@@ -34,17 +34,28 @@ jobs:
       working-directory: ./terraform
 
     - name: Terraform Plan
-      run: terraform plan \
-        -var="project_id=${{ secrets.TF_VAR_project_id }}" \
-        -var="region=${{ secrets.TF_VAR_region }}" \
-        -var="zone=${{ secrets.TF_VAR_zone }}" \
-        -var="network_name=${{ secrets.TF_VAR_network_name }}"
+      run: |
+        terraform plan \
+          -var="project_id=${{ secrets.TF_VAR_project_id }}" \
+          -var="region=${{ secrets.TF_VAR_region }}" \
+          -var="zone=${{ secrets.TF_VAR_zone }}" \
+          -var="network_name=${{ secrets.TF_VAR_network_name }}"
       working-directory: ./terraform
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve \
-        -var="project_id=${{ secrets.TF_VAR_project_id }}" \
-        -var="region=${{ secrets.TF_VAR_region }}" \
-        -var="zone=${{ secrets.TF_VAR_zone }}" \
-        -var="network_name=${{ secrets.TF_VAR_network_name }}"
+      run: |
+        terraform apply -auto-approve \
+          -var="project_id=${{ secrets.TF_VAR_project_id }}" \
+          -var="region=${{ secrets.TF_VAR_region }}" \
+          -var="zone=${{ secrets.TF_VAR_zone }}" \
+          -var="network_name=${{ secrets.TF_VAR_network_name }}"
       working-directory: ./terraform
+
+    - name: Terraform Plan
+      run: terraform plan -var-file="terraform.tfvars"
+      working-directory: ./terraform
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -var-file="terraform.tfvars"
+      working-directory: ./terraform
+
