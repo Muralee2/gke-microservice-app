@@ -15,6 +15,7 @@ jobs:
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       GCP_REGION: ${{ secrets.GCP_REGION }}
       GCP_ZONE: ${{ secrets.GCP_ZONE }}
+      TF_VAR_gke_node_sa_email: ${{ secrets.GKE_NODE_SA_EMAIL }}
 
     steps:
       - name: Checkout code
