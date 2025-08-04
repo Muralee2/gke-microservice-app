@@ -30,10 +30,10 @@ jobs:
       - name: Terraform Init with GCS Backend
         run: |
           terraform init \
-            -backend-config="bucket=${GCS_BUCKET_NAME}" \
-            -backend-config="prefix=gke-secure-app/network" \
-            -backend-config="project=${GCP_PROJECT_ID}"
+             -backend-config="bucket=${GCS_BUCKET_NAME}" \
+             -backend-config="prefix=gke-secure-app/network"
         working-directory: terraform/
+
 
       - name: Terraform Apply
         run: |
