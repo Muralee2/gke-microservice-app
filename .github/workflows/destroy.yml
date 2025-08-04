@@ -37,8 +37,10 @@ jobs:
            -backend-config="prefix=gke-secure-app/network"
 
       - name: Terraform Destroy
-        run: terraform destroy -auto-approve \
+        run: |
+          terraform -chdir=terraform destroy -auto-approve \
           -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
           -var="region=${{ secrets.GCP_REGION }}" \
           -var="zone=${{ secrets.GCP_ZONE }}" \
           -var="network_name=secure-vpc"
+
