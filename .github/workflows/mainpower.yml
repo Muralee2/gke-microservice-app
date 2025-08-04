@@ -20,7 +20,6 @@ jobs:
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       GCP_REGION: ${{ secrets.GCP_REGION }}
       GCP_ZONE: ${{ secrets.GCP_ZONE }}
-      TF_VAR_gke_node_sa_email: ${{ secrets.GKE_NODE_SA_EMAIL }}
 
     steps:
       - name: ⬇️ Checkout Repository
@@ -31,13 +30,14 @@ jobs:
         with:
           terraform_version: 1.6.6
 
-      - name: 🔐 Authenticate to Google Cloud (OIDC)
+      - name: 🔐 Authenticate to Google Cloud via OIDC
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: "projects/${{ secrets.WIF_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_ID }}/providers/${{ secrets.WIF_PROVIDER_ID }}"
-          service_account: "${{ secrets.GCP_SA_EMAIL }}"
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
 
-      - name: ☁️ Set up gcloud (optional but recommended)
+      - name: ☁️ Set up gcloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -57,3 +57,8 @@ jobs:
             -var="zone=${GCP_ZONE}" \
             -var="network_name=secure-vpc"
         working-directory: terraform/
+
+      - name: ✅ Print Service Account Email (Verify OIDC worked)
+        run: |
+          gcloud auth list
+          gcloud config list
