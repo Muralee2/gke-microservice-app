@@ -1,13 +1,16 @@
-name: Terraform Apply GKE Secure App
+name: Terraform Deploy to GCP
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
+  GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCP_REGION: ${{ secrets.GCP_REGION }}
   GCP_ZONE: ${{ secrets.GCP_ZONE }}
-  GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
 
 jobs:
   terraform:
@@ -27,13 +30,12 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      - name: Terraform Init with GCS Backend
+      - name: Terraform Init
         run: |
           terraform init \
-             -backend-config="bucket=${GCS_BUCKET_NAME}" \
-             -backend-config="prefix=gke-secure-app/network"
+            -backend-config="bucket=${GCS_BUCKET_NAME}" \
+            -backend-config="prefix=gke-secure-app/network"
         working-directory: terraform/
-
 
       - name: Terraform Apply
         run: |
@@ -43,3 +45,4 @@ jobs:
             -var="zone=${GCP_ZONE}" \
             -var="network_name=secure-vpc"
         working-directory: terraform/
+
