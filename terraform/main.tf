@@ -16,12 +16,12 @@ resource "google_compute_subnetwork" "subnet" {
   network       = google_compute_network.vpc_network.id
 
   secondary_ip_range {
-    range_name    = "pods"
+    range_name    = "pods-range"          # ✅ match this
     ip_cidr_range = "10.20.0.0/16"
   }
 
   secondary_ip_range {
-    range_name    = "services"
+    range_name    = "services-range"      # ✅ match this
     ip_cidr_range = "10.30.0.0/20"
   }
 }
@@ -51,6 +51,11 @@ resource "google_compute_firewall" "internal_traffic" {
   }
 }
 
+resource "google_service_account" "gke_node_sa" {
+  account_id   = "gke-node-sa"
+  display_name = "GKE Node Service Account"
+}
+
 resource "google_container_cluster" "gke_cluster" {
   name     = "secure-gke-cluster"
   location = var.region
@@ -68,8 +73,8 @@ resource "google_container_cluster" "gke_cluster" {
   }
 
   ip_allocation_policy {
-    cluster_secondary_range_name  = "pods-range"
-    services_secondary_range_name = "services-range"
+    cluster_secondary_range_name  = "pods-range"        # ✅ must match subnetwork
+    services_secondary_range_name = "services-range"    # ✅ must match subnetwork
   }
 
   master_authorized_networks_config {
@@ -79,14 +84,15 @@ resource "google_container_cluster" "gke_cluster" {
     }
   }
 
-  # ✅ Use custom service account for nodes
   node_config {
     machine_type = "e2-medium"
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]
-    service_account = var.gke_node_sa_email  # <-- critical
+    service_account = google_service_account.gke_node_sa.email  # ✅ use created SA
   }
+
+  depends_on = [google_service_account.gke_node_sa] # ✅ make sure SA exists before cluster
 }
 
 
