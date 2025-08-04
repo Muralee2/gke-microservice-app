@@ -1,17 +1,19 @@
-name: Terraform Apply
+name: Terraform Apply GKE Secure App
 
 on:
-  workflow_dispatch:  # Safe trigger for secrets
+  workflow_dispatch:
 
 env:
-  GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCP_REGION: ${{ secrets.GCP_REGION }}
   GCP_ZONE: ${{ secrets.GCP_ZONE }}
+  GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
 
 jobs:
   terraform:
+    name: Terraform GCP Apply
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -24,28 +26,20 @@ jobs:
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      - name: Set GCP project
-        run: gcloud config set project $GCP_PROJECT_ID
-
-      - name: Terraform Init
+      - name: Terraform Init with GCS Backend
         run: |
           terraform init \
             -backend-config="bucket=${GCS_BUCKET_NAME}" \
             -backend-config="prefix=gke-secure-app/network" \
             -backend-config="project=${GCP_PROJECT_ID}"
 
-      - name: Terraform Plan
-        run: terraform plan \
-          -var="project_id=${GCP_PROJECT_ID}" \
-          -var="region=${GCP_REGION}" \
-          -var="zone=${GCP_ZONE}" \
-          -var="network_name=secure-vpc"
-
       - name: Terraform Apply
-        run: terraform apply -auto-approve \
-          -var="project_id=${GCP_PROJECT_ID}" \
-          -var="region=${GCP_REGION}" \
-          -var="zone=${GCP_ZONE}" \
-          -var="network_name=secure-vpc"
+        run: |
+          terraform apply -auto-approve \
+            -var="project_id=${GCP_PROJECT_ID}" \
+            -var="region=${GCP_REGION}" \
+            -var="zone=${GCP_ZONE}" \
+            -var="network_name=secure-vpc"
+
