@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   terraform:
     name: Terraform Apply with OIDC Auth
@@ -53,4 +57,3 @@ jobs:
             -var="zone=${GCP_ZONE}" \
             -var="network_name=secure-vpc"
         working-directory: terraform/
-
