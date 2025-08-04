@@ -1,61 +1,63 @@
-name: Deploy GKE Infra
+name: Terraform GKE Deploy
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
+
+env:
+  GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
 
 jobs:
   terraform:
+    name: Deploy GKE Secure App
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      id-token: write
+      id-token: write  # Required for workload identity federation
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.6
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        terraform_version: 1.5.7
+      - name: Authenticate to GCP
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-    - name: Terraform Init
-      run: terraform init
-      working-directory: ./terraform
+      - name: Configure Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
-    - name: Terraform Validate
-      run: terraform validate
-      working-directory: ./terraform
+      - name: Terraform Init with GCS Backend
+        run: |
+          terraform init \
+            -backend-config="bucket=${GCS_BUCKET_NAME}" \
+            -backend-config="prefix=gke-secure-app/network" \
+            -backend-config="project=${GCP_PROJECT_ID}"
 
-    - name: Terraform Plan
-      run: |
-        terraform plan \
-          -var="project_id=${{ secrets.TF_VAR_project_id }}" \
-          -var="region=${{ secrets.TF_VAR_region }}" \
-          -var="zone=${{ secrets.TF_VAR_zone }}" \
-          -var="network_name=${{ secrets.TF_VAR_network_name }}"
-      working-directory: ./terraform
+      - name: Terraform Validate
+        run: terraform validate
 
-    - name: Terraform Apply
-      run: |
-        terraform apply -auto-approve \
-          -var="project_id=${{ secrets.TF_VAR_project_id }}" \
-          -var="region=${{ secrets.TF_VAR_region }}" \
-          -var="zone=${{ secrets.TF_VAR_zone }}" \
-          -var="network_name=${{ secrets.TF_VAR_network_name }}"
-      working-directory: ./terraform
+      - name: Terraform Plan
+        run: terraform plan \
+          -var="project_id=${GCP_PROJECT_ID}" \
+          -var="region=${{ secrets.GCP_REGION }}" \
+          -var="zone=${{ secrets.GCP_ZONE }}" \
+          -var="network_name=secure-vpc"
 
-    - name: Terraform Plan
-      run: terraform plan -var-file="terraform.tfvars"
-      working-directory: ./terraform
-
-    - name: Terraform Apply
-      run: terraform apply -auto-approve -var-file="terraform.tfvars"
-      working-directory: ./terraform
+      - name: Terraform Apply
+        run: terraform apply -auto-approve \
+          -var="project_id=${GCP_PROJECT_ID}" \
+          -var="region=${{ secrets.GCP_REGION }}" \
+          -var="zone=${{ secrets.GCP_ZONE }}" \
+          -var="network_name=secur_
 
