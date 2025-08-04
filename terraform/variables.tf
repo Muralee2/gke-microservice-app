@@ -1,19 +1,19 @@
 variable "project_id" {
-  description = "GCP Project ID"
   type        = string
+  description = "GCP project ID"
 }
 
 variable "region" {
-  description = "GCP Region"
   type        = string
+  description = "GCP region"
 }
 
 variable "zone" {
-  description = "GCP Zone"
   type        = string
+  description = "GCP zone"
 }
 
 variable "network_name" {
-  description = "Name of the VPC network"
   type        = string
+  description = "Name of the VPC network"
 }
