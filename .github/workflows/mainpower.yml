@@ -1,4 +1,4 @@
-name: Terraform Deploy to GCP
+name: Terraform Deploy to GCP (via OIDC)
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   terraform:
+    name: Terraform Apply with OIDC Auth
     runs-on: ubuntu-latest
 
     env:
@@ -18,27 +19,33 @@ jobs:
       TF_VAR_gke_node_sa_email: ${{ secrets.GKE_NODE_SA_EMAIL }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Terraform
+      - name: 🔧 Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.6.6
 
-      - name: Authenticate to GCP
+      - name: 🔐 Authenticate to Google Cloud (OIDC)
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+          workload_identity_provider: "projects/${{ secrets.WIF_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_ID }}/providers/${{ secrets.WIF_PROVIDER_ID }}"
+          service_account: "${{ secrets.GCP_SA_EMAIL }}"
 
-      - name: Terraform Init
+      - name: ☁️ Set up gcloud (optional but recommended)
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: ⚙️ Terraform Init
         run: |
           terraform init \
             -backend-config="bucket=${GCS_BUCKET_NAME}" \
-            -backend-config="prefix=gke-secure-app/network"
+            -backend-config="prefix=gke-secure-app"
         working-directory: terraform/
 
-      - name: Terraform Apply
+      - name: 🚀 Terraform Apply
         run: |
           terraform apply -auto-approve \
             -var="project_id=${GCP_PROJECT_ID}" \
