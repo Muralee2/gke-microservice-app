@@ -14,24 +14,38 @@ resource "google_compute_subnetwork" "subnet" {
   ip_cidr_range = "10.10.0.0/16"
   region        = var.region
   network       = google_compute_network.vpc_network.id
+
+  secondary_ip_range {
+    range_name    = "pods"
+    ip_cidr_range = "10.20.0.0/16"
+  }
+
+  secondary_ip_range {
+    range_name    = "services"
+    ip_cidr_range = "10.30.0.0/20"
+  }
 }
 
 resource "google_compute_firewall" "egress_to_master" {
-  name    = "allow-egress-to-gke-master"
-  network = google_compute_network.vpc_network.name
+  name      = "allow-egress-to-gke-master"
+  network   = google_compute_network.vpc_network.name
   direction = "EGRESS"
+
   allow {
     protocol = "tcp"
     ports    = ["443"]
   }
+
   destination_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
 }
 
 resource "google_compute_firewall" "internal_traffic" {
-  name    = "allow-internal"
-  network = google_compute_network.vpc_network.name
+  name      = "allow-internal"
+  network   = google_compute_network.vpc_network.name
   direction = "INGRESS"
+
   source_ranges = ["10.10.0.0/16"]
+
   allow {
     protocol = "all"
   }
@@ -40,6 +54,7 @@ resource "google_compute_firewall" "internal_traffic" {
 resource "google_container_cluster" "gke_cluster" {
   name     = "secure-gke"
   location = var.region
+
   network    = google_compute_network.vpc_network.name
   subnetwork = google_compute_subnetwork.subnet.name
 
@@ -81,3 +96,4 @@ resource "google_container_node_pool" "primary_nodes" {
     ]
   }
 }
+
