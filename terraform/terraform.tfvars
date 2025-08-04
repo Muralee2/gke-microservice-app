@@ -1,4 +1,4 @@
-project_id   = "your-gcp-project-id"
-region       = "asia-south1"
-zone         = "asia-south1-a"
+project_id   = "modern-girder-463514-t1"
+region       = "us-central1"
+zone         = "us-central1-a"
 network_name = "custom-vpc"
