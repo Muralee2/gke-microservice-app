@@ -1,46 +1,42 @@
 name: Terraform Destroy
 
 on:
-  workflow_dispatch:  # Manual trigger only
-
-permissions:
-  contents: read
-  id-token: write
+  workflow_dispatch:  # manual trigger
 
 jobs:
-  destroy:
-    name: Terraform Destroy Job
+  terraform-destroy:
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.7.5
+          terraform_version: 1.8.2
 
-      - name: Authenticate to Google Cloud
+      - name: Auth to GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
 
-      - name: Terraform Init
+      - name: Terraform Init (reconfigure backend)
         run: |
-          terraform init \
-           -backend-config="bucket=${{ secrets.GCS_BUCKET_NAME }}" \
-           -backend-config="prefix=gke-secure-app/network"
+          terraform -chdir=terraform init \
+            -backend-config="bucket=${{ secrets.GCS_BUCKET_NAME }}" \
+            -backend-config="prefix=gke-secure-app/network" \
+            -backend-config="credentials=${{ secrets.GCP_CREDENTIALS }}" \
+            -reconfigure
 
       - name: Terraform Destroy
         run: |
           terraform -chdir=terraform destroy -auto-approve \
-          -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
-          -var="region=${{ secrets.GCP_REGION }}" \
-          -var="zone=${{ secrets.GCP_ZONE }}" \
-          -var="network_name=secure-vpc"
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="region=${{ secrets.GCP_REGION }}" \
+            -var="zone=${{ secrets.GCP_ZONE }}" \
+            -var="network_name=secure-vpc"
 
