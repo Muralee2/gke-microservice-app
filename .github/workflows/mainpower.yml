@@ -1,4 +1,4 @@
-name: Terraform Deploy to GCP (Simple Auth)
+name: Terraform Deploy to GCP
 
 on:
   push:
@@ -6,43 +6,50 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   terraform:
-    name: Terraform Apply with Simple GCP Auth
     runs-on: ubuntu-latest
 
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GCP_ZONE: ${{ secrets.GCP_ZONE }}
+      GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+
     steps:
-      - name: ⬇️ Checkout Repository
+      - name: ⬇️ Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🔧 Set up Terraform
+      - name: 🔧 Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.6.6
 
-      - name: 🔐 Authenticate with Google Cloud (Service Account Key)
-        env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+      - name: 🔐 Authenticate to Google Cloud (SA Key)
         run: |
-          echo "$GCP_SA_KEY" > ${HOME}/gcp-key.json
-          gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
-          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+          echo "${{ secrets.GCP_CREDENTIALS }}" > $HOME/gcp-key.json
+          gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
+          gcloud config set project $GCP_PROJECT_ID
+          gcloud config set compute/region $GCP_REGION
+          gcloud config set compute/zone $GCP_ZONE
 
-      - name: ☁️ Terraform Init
+      - name: ⚙️ Terraform Init
         run: |
           terraform init \
-            -backend-config="bucket=${{ secrets.GCS_BUCKET_NAME }}" \
+            -backend-config="bucket=${GCS_BUCKET_NAME}" \
             -backend-config="prefix=gke-secure-app"
         working-directory: terraform/
 
       - name: 🚀 Terraform Apply
         run: |
           terraform apply -auto-approve \
-            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
-            -var="region=${{ secrets.GCP_REGION }}" \
-            -var="zone=${{ secrets.GCP_ZONE }}" \
-            -var="network_name=secure-vpc"
+            -var="project_id=${GCP_PROJECT_ID}" \
+            -var="region=${GCP_REGION}" \
+            -var="zone=${GCP_ZONE}" \
+            -var="network_name=secure-vpc" \
+            -var="gke_node_sa_email=${{ secrets.TF_VAR_GKE_NODE_SA_EMAIL }}"
         working-directory: terraform/
 
-      - name: ✅ Verify Auth
-        run: gcloud auth list
