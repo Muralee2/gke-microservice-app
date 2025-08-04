@@ -1,7 +1,7 @@
 name: Terraform Destroy
 
 on:
-  workflow_dispatch:  # manual trigger
+  workflow_dispatch:
 
 jobs:
   terraform-destroy:
@@ -21,10 +21,10 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      - name: Set up gcloud CLI
+      - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
 
-      - name: Terraform Init (reconfigure backend)
+      - name: Terraform Init
         run: |
           terraform -chdir=terraform init \
             -backend-config="bucket=${{ secrets.GCS_BUCKET_NAME }}" \
@@ -39,4 +39,3 @@ jobs:
             -var="region=${{ secrets.GCP_REGION }}" \
             -var="zone=${{ secrets.GCP_ZONE }}" \
             -var="network_name=secure-vpc"
-
