@@ -1,4 +1,4 @@
-name: Terraform Deploy to GCP (via OIDC)
+name: Terraform Deploy to GCP (Simple Auth)
 
 on:
   push:
@@ -6,20 +6,10 @@ on:
       - main
   workflow_dispatch:
 
-permissions:
-  id-token: write   # ✅ Required for OIDC auth
-  contents: read
-
 jobs:
   terraform:
-    name: Terraform Apply with OIDC Auth
+    name: Terraform Apply with Simple GCP Auth
     runs-on: ubuntu-latest
-
-    env:
-      GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
-      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      GCP_REGION: ${{ secrets.GCP_REGION }}
-      GCP_ZONE: ${{ secrets.GCP_ZONE }}
 
     steps:
       - name: ⬇️ Checkout Repository
@@ -30,35 +20,29 @@ jobs:
         with:
           terraform_version: 1.6.6
 
-      - name: 🔐 Authenticate to Google Cloud via OIDC
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: "projects/${{ secrets.WIF_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_ID }}/providers/${{ secrets.WIF_PROVIDER_ID }}"
-          service_account: ${{ secrets.GCP_SA_EMAIL }}
+      - name: 🔐 Authenticate with Google Cloud (Service Account Key)
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo "$GCP_SA_KEY" > ${HOME}/gcp-key.json
+          gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
+          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: ☁️ Set up gcloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-
-      - name: ⚙️ Terraform Init
+      - name: ☁️ Terraform Init
         run: |
           terraform init \
-            -backend-config="bucket=${GCS_BUCKET_NAME}" \
+            -backend-config="bucket=${{ secrets.GCS_BUCKET_NAME }}" \
             -backend-config="prefix=gke-secure-app"
         working-directory: terraform/
 
       - name: 🚀 Terraform Apply
         run: |
           terraform apply -auto-approve \
-            -var="project_id=${GCP_PROJECT_ID}" \
-            -var="region=${GCP_REGION}" \
-            -var="zone=${GCP_ZONE}" \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="region=${{ secrets.GCP_REGION }}" \
+            -var="zone=${{ secrets.GCP_ZONE }}" \
             -var="network_name=secure-vpc"
         working-directory: terraform/
 
-      - name: ✅ Print Service Account Email (Verify OIDC worked)
-        run: |
-          gcloud auth list
-          gcloud config list
+      - name: ✅ Verify Auth
+        run: gcloud auth list
