@@ -11,7 +11,6 @@ env:
 
 jobs:
   terraform:
-    name: Terraform GCP Apply
     runs-on: ubuntu-latest
 
     steps:
@@ -34,6 +33,7 @@ jobs:
             -backend-config="bucket=${GCS_BUCKET_NAME}" \
             -backend-config="prefix=gke-secure-app/network" \
             -backend-config="project=${GCP_PROJECT_ID}"
+        working-directory: terraform/
 
       - name: Terraform Apply
         run: |
@@ -42,4 +42,4 @@ jobs:
             -var="region=${GCP_REGION}" \
             -var="zone=${GCP_ZONE}" \
             -var="network_name=secure-vpc"
-
+        working-directory: terraform/
