@@ -1,23 +1,15 @@
-name: Terraform GKE Deploy
+name: Terraform Apply
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_dispatch:  # You can change to push or pull_request if needed
 
 env:
-  GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
 
 jobs:
   terraform:
-    name: Deploy GKE Secure App
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      id-token: write  # Required for workload identity federation
 
     steps:
       - name: Checkout code
@@ -29,23 +21,19 @@ jobs:
           terraform_version: 1.6.6
 
       - name: Authenticate to GCP
-        id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      - name: Configure Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+      - name: Set GCP project
+        run: gcloud config set project $GCP_PROJECT_ID
 
-      - name: Terraform Init with GCS Backend
+      - name: Terraform Init with Remote Backend
         run: |
           terraform init \
             -backend-config="bucket=${GCS_BUCKET_NAME}" \
             -backend-config="prefix=gke-secure-app/network" \
             -backend-config="project=${GCP_PROJECT_ID}"
-
-      - name: Terraform Validate
-        run: terraform validate
 
       - name: Terraform Plan
         run: terraform plan \
@@ -59,5 +47,4 @@ jobs:
           -var="project_id=${GCP_PROJECT_ID}" \
           -var="region=${{ secrets.GCP_REGION }}" \
           -var="zone=${{ secrets.GCP_ZONE }}" \
-          -var="network_name=secur_
-
+          -var="network_name=secure-vpc"
