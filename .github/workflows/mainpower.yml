@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write
+  id-token: write   # ✅ Required for OIDC auth
   contents: read
 
 jobs:
