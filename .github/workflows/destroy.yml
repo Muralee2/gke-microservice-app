@@ -16,7 +16,7 @@ jobs:
         with:
           terraform_version: 1.8.2
 
-      - name: Auth to GCP
+      - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
@@ -29,7 +29,6 @@ jobs:
           terraform -chdir=terraform init \
             -backend-config="bucket=${{ secrets.GCS_BUCKET_NAME }}" \
             -backend-config="prefix=gke-secure-app/network" \
-            -backend-config="credentials=${{ secrets.GCP_CREDENTIALS }}" \
             -reconfigure
 
       - name: Terraform Destroy
