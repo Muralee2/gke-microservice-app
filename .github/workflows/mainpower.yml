@@ -6,15 +6,15 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
-  GCP_PROJECT_ID: ${{ secrets.TF_VAR_PROJECT_ID }}
-  GCP_REGION: ${{ secrets.TF_VAR_REGION }}
-  GCP_ZONE: ${{ secrets.TF_VAR_ZONE }}
-
 jobs:
   terraform:
     runs-on: ubuntu-latest
+
+    env:
+      GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GCP_ZONE: ${{ secrets.GCP_ZONE }}
 
     steps:
       - name: Checkout code
@@ -40,9 +40,9 @@ jobs:
       - name: Terraform Apply
         run: |
           terraform apply -auto-approve \
-            -var="project_id=${TF_VAR_PROJECT_ID }" \
-            -var="region=${TF_VAR_REGION}" \
-            -var="zone=${TF_VAR_ZONE}" \
+            -var="project_id=${GCP_PROJECT_ID}" \
+            -var="region=${GCP_REGION}" \
+            -var="zone=${GCP_ZONE}" \
             -var="network_name=secure-vpc"
         working-directory: terraform/
 
